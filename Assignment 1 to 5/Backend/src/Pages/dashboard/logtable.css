@@ -1,0 +1,22 @@
+.highlighted-row {
+    background-color: #8EA9DB;
+    width:fit-content;
+    height:30px
+  }
+
+.default-row:hover{
+  color:blue;
+  height:80px;
+  white-space: normal !important;
+  text-overflow: unset !important;
+}
+
+.dynamicHeight > .MuiDataGrid-cell {
+  overflow: visible;
+  white-space: normal;
+}
+
+
+.hide-row{
+  background-color: green;
+}
