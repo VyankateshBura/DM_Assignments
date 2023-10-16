@@ -42,6 +42,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
 )
+from sklearn.cluster import KMeans
 from sklearn.tree import export_text
 from django.views.decorators.csrf import csrf_exempt
 import logging
@@ -56,7 +57,486 @@ from sklearn.neural_network import MLPClassifier
 import matplotlib.pyplot as plt
 import tempfile
 import shutil
+from scipy.spatial.distance import euclidean
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.spatial.distance import cdist
+from sklearn_extra.cluster import KMedoids
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import pairwise_distances
+from random import sample
+import os
 
+
+def agnesAlgo(data, k):
+    
+    try:
+        data = np.array(data, dtype=np.float64)  # Convert data to a numpy array of type float64
+        num_points = len(data)
+        clusters = [[i] for i in range(num_points)]
+        distances = np.zeros((num_points, num_points))
+        for i in range(num_points):
+            for j in range(i + 1, num_points):
+                distances[i, j] = distances[j, i] = euclidean(data[i], data[j])
+
+        while len(clusters) > k:
+            min_distance = np.inf
+            merge_clusters = None
+            for i in range(len(clusters)):
+                for j in range(i + 1, len(clusters)):
+                    for point1 in clusters[i]:
+                        for point2 in clusters[j]:
+                            if point1 < num_points and point2 < num_points:  # Ensure indices are within bounds
+                                distance = distances[point1][point2]
+                                if distance < min_distance:
+                                    min_distance = distance
+                                    merge_clusters = (i, j)
+            if merge_clusters is None:
+                break
+            i, j = merge_clusters
+            clusters[i].extend(clusters[j])
+            del clusters[j]
+            num_points -= 1  # Update the number of points after deleting a cluster
+
+            updated_distances = np.zeros((num_points, num_points))
+            for p in range(num_points):
+                for q in range(p + 1, num_points):
+                    p_orig = clusters[i][p]
+                    q_orig = clusters[i][q]
+                    updated_distances[p, q] = updated_distances[q, p] = distances[p_orig][q_orig]
+            
+            distances = np.delete(distances, j, 0)
+            distances = np.delete(distances, j, 1)
+            distances = updated_distances
+
+        return clusters, distances
+    except Exception as e:
+        print(e)
+
+# Plotting the dendrogram
+def plot_dendrogram(clusters, distances):
+    plt.figure(figsize=(10, 7))
+    plt.title("Dendrogram")
+    plt.xlabel("Sample Index")
+    plt.ylabel("Distance")
+    for cluster in clusters:
+        for point in cluster:
+            plt.annotate(str(point), (point, 0), textcoords="offset points", xytext=(0, 10), ha='center')
+    for i in range(len(distances)):
+        for j in range(i + 1, len(distances)):
+            plt.plot([i, j], [distances[i, j], distances[i, j]], c='b')
+    plt.show()
+    image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/dendrogram.png'
+    plt.savefig(image_path)
+    plt.close()
+
+@csrf_exempt
+def agnes(request):
+    
+    try:
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        # Assuming 'data' is your DataFrame
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        def apply_zscore(column):
+            return zscore_custom(column)
+
+        
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        # Assuming data contains 'target' column with class labels
+        # X = [[row[attribute1], row[attribute2]] for row in data]````
+        X = df.iloc[:, :-1]
+        k = 3
+        data = np.array(X, dtype=np.float64)
+        # result_clusters, distances = agnesAlgo(data, k)
+        # print(result_clusters)
+        
+        
+        # Agnes Agglomerative Clustering
+        linked = linkage(X, 'ward')
+        labelList = range(1, len(X) + 1)
+
+        plt.figure(figsize=(10, 7))
+        dendrogram(linked,
+                   orientation='top',
+                   labels=labelList,
+                   distance_sort='descending',
+                   show_leaf_counts=True)
+        
+        
+        # Save the image to a specific location
+        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
+        # plot_dendrogram(result_clusters, distances)
+        image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/AGNES/dendrogram.png'
+        plt.savefig(image_path)
+        plt.close()
+
+        
+        results = {
+            "ClusterNumber":'result_clusters'
+        }
+        return JsonResponse({"result":"Agnes Agglomerative Clustering completed"})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+    
+    
+@csrf_exempt
+def diana(request):
+    try:
+        
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        # Assuming 'data' is your DataFrame
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        def apply_zscore(column):
+            return zscore_custom(column)
+
+        
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        # Assuming data contains 'target' column with class labels
+        # X = [[row[attribute1], row[attribute2]] for row in data]````
+        X = df.iloc[:, :-1]
+        k = 3
+        data = np.array(X, dtype=np.float64)
+        # result_clusters, distances = agnesAlgo(data, k)
+        # print(result_clusters)
+        
+        
+        # Agnes Agglomerative Clustering
+        linked = linkage(X, 'ward')
+        labelList = range(1, len(X) + 1)
+
+        plt.figure(figsize=(10, 7))
+        dendrogram(linked,
+                   orientation='top',
+                   labels=labelList,
+                   distance_sort='descending',
+                   show_leaf_counts=True)
+        
+        
+        # Save the image to a specific location
+        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
+        # plot_dendrogram(result_clusters, distances)
+        image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/DIANA/dendrogram.png'
+        plt.savefig(image_path)
+        plt.close()
+
+        
+        results = {
+            "ClusterNumber":'result_clusters'
+        }
+        return JsonResponse({"result":"Agnes Agglomerative Clustering completed"})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+
+
+
+
+class KMeansScratch:
+    def __init__(self, k=3, max_iterations=100):
+        self.k = k
+        self.max_iterations = max_iterations
+
+    def fit(self, data):
+        self.centroids = {}
+        for i in range(self.k):
+            self.centroids[i] = data[i]
+
+        for _ in range(self.max_iterations):
+            self.classifications = {}
+            for i in range(self.k):
+                self.classifications[i] = []
+
+            for features in data:
+                distances = [np.linalg.norm(features - self.centroids[centroid]) for centroid in self.centroids]
+                classification = distances.index(min(distances))
+                self.classifications[classification].append(features)
+
+            prev_centroids = dict(self.centroids)
+
+            for classification in self.classifications:
+                self.centroids[classification] = np.average(self.classifications[classification], axis=0)
+
+            optimized = True
+
+            for c in self.centroids:
+                original_centroid = prev_centroids[c]
+                current_centroid = self.centroids[c]
+                if np.sum((current_centroid - original_centroid) / original_centroid * 100.0) > 0.001:
+                    optimized = False
+
+            if optimized:
+                break
+
+        return self.classifications, self.centroids
+    
+    
+    
+    
+def convert_to_list(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
+
+def apply_zscore(column):
+    return zscore_custom(column) 
+@csrf_exempt
+def K_Means(request):
+    
+    try:
+        
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        K_cluster = dp['k']
+        
+        print("The number of cluster = ",K_cluster)
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        X = df.iloc[:, :-1]
+        data = np.array(X, dtype=np.float64)
+
+        # K-means scratch implementation
+        kmeans_scratch = KMeansScratch(k=K_cluster)
+        results_scratch = kmeans_scratch.fit(data)
+        data_serializable_scratch = json.dumps(results_scratch, default=convert_to_list, indent=2)
+
+        # K-means builtin implementation
+        kmeans_builtin = KMeans(n_clusters=K_cluster)
+        results_builtin = kmeans_builtin.fit_predict(data)
+        data_serializable_builtin = json.dumps(results_builtin, default=convert_to_list, indent=2)
+
+        # Generate the scatter plot
+        plt.scatter(X.iloc[:, 0], X.iloc[:, 1], c=results_builtin, s=50, cmap='viridis')
+        centers = kmeans_builtin.cluster_centers_
+        plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+
+        # Save the image
+        plt.savefig('C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/K-Means/kmeans_clusters.png')
+        plt.close()
+
+        results = {
+            "kmeans_scratch": data_serializable_scratch,
+            "kmeans_builtin": data_serializable_builtin
+        }
+
+        return JsonResponse({"result": "K-means Clustering completed", "data": results})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+    
+    
+# class KMedoids:
+#     def __init__(self, k=2, max_iterations=100):
+#         self.k = k
+#         self.max_iterations = max_iterations
+
+#     def fit(self, data):
+#         n, _ = data.shape
+#         medoids = sample(range(n), self.k)
+
+#         for _ in range(self.max_iterations):
+#             clusters = [[] for _ in range(self.k)]
+
+#             for i in range(n):
+#                 distances = pairwise_distances(data, [data[i]], metric='euclidean').ravel()
+#                 cluster = np.argmin(distances)
+#                 clusters[cluster].append(i)
+
+#             new_medoids = []
+#             for cluster in clusters:
+#                 cluster_distances = pairwise_distances(data[cluster], metric='euclidean')
+#                 total_distance = cluster_distances.sum(axis=1)
+#                 min_index = cluster[np.argmin(total_distance)]
+#                 new_medoids.append(min_index)
+
+#             if set(medoids) == set(new_medoids):
+#                 break
+#             medoids = new_medoids
+
+#         self.labels_ = np.zeros(n)
+#         for i, cluster in enumerate(clusters):
+#             self.labels_[cluster] = i
+
+#         self.cluster_centers_ = data[medoids]
+#         return self
+
+
+def k_medoids_scratch(D, k=3, max_iterations=100):
+    n, _ = D.shape
+    M = np.array(D[np.random.choice(n, k, replace=False)])
+
+    for _ in range(max_iterations):
+        D_M = cdist(D, M)
+        C = np.argmin(D_M, axis=1)
+
+        M_new = np.array([D[C == i].mean(axis=0) for i in range(k)])
+        if np.all(M == M_new):
+            break
+        M = M_new
+
+    return C, M
+
+
+@csrf_exempt
+def K_Medoids(request):
+    
+    try:
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        # Assuming 'data' is your DataFrame
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        def apply_zscore(column):
+            return zscore_custom(column)
+
+        
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        # Assuming data contains 'target' column with class labels
+        # X = [[row[attribute1], row[attribute2]] for row in data]````
+        X = df.iloc[:, :-1]
+        k = 3
+        # data = np.array(X, dtype=np.float64)
+
+        # Using K-Medoids from scratch
+        # results_scratch, medoids_scratch = k_medoids_scratch(data, k)
+
+        # Using built-in K-Medoids
+        # kmedoids_builtin = KMedoids(n_clusters=k)
+        # results_builtin = kmedoids_builtin.fit_predict(dc.values)
+        # medoids_builtin = dc.values[kmedoids_builtin.medoid_indices_]
+
+        # return results_scratch, medoids_scratch, results_builtin, medoids_builtin
+
+        # print(results_scratch,medoids_builtin)
+        results = {
+            "ClusterNumber":'result_clusters'
+        }
+        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+    
+    
+
+
+@csrf_exempt
+def BIRCH(request):
+    
+    try:
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        # Assuming 'data' is your DataFrame
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        def apply_zscore(column):
+            return zscore_custom(column)
+
+        
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        # Assuming data contains 'target' column with class labels
+        # X = [[row[attribute1], row[attribute2]] for row in data]````
+        X = df.iloc[:, :-1]
+        k = 3
+        data = np.array(X, dtype=np.float64)
+        result_clusters, distances = agnesAlgo(data, k)
+        print(result_clusters)
+        
+        
+        # Agnes Agglomerative Clustering
+        # linked = linkage(X, 'ward')
+        # labelList = range(1, len(X) + 1)
+
+        # plt.figure(figsize=(10, 7))
+        # dendrogram(linked,
+        #            orientation='top',
+        #            labels=labelList,
+        #            distance_sort='descending',
+        #            show_leaf_counts=True)
+        
+        
+        # Save the image to a specific location
+        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
+        # plot_dendrogram(result_clusters, distances)
+        # plt.savefig(image_path)
+        # plt.close()
+
+        
+        results = {
+            "ClusterNumber":'result_clusters'
+        }
+        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+    
+  
+@csrf_exempt
+def DBSCAN(request):
+    
+    try:
+        dp = json.loads(request.body)
+        df = pd.DataFrame(dp['arrayData'])
+        # Assuming 'data' is your DataFrame
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        def apply_zscore(column):
+            return zscore_custom(column)
+
+        
+        dc = df.copy()
+        dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
+
+        # Assuming data contains 'target' column with class labels
+        # X = [[row[attribute1], row[attribute2]] for row in data]````
+        X = df.iloc[:, :-1]
+        k = 3
+        data = np.array(X, dtype=np.float64)
+        result_clusters, distances = agnesAlgo(data, k)
+        print(result_clusters)
+        
+        
+        # Agnes Agglomerative Clustering
+        # linked = linkage(X, 'ward')
+        # labelList = range(1, len(X) + 1)
+
+        # plt.figure(figsize=(10, 7))
+        # dendrogram(linked,
+        #            orientation='top',
+        #            labels=labelList,
+        #            distance_sort='descending',
+        #            show_leaf_counts=True)
+        
+        
+        # Save the image to a specific location
+        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
+        # plot_dendrogram(result_clusters, distances)
+        # plt.savefig(image_path)
+        # plt.close()
+
+        
+        results = {
+            "ClusterNumber":'result_clusters'
+        }
+        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+    
+      
 
 # Function to create and evaluate a Regression classifier
 @csrf_exempt
@@ -396,7 +876,7 @@ def decision_tree_classifier(request):
     results = {}
 
     # Implement decision tree classifiers with different attribute selection measures
-    attribute_measures = ["gini", "log_loss", "entropy"]
+    attribute_measures = ["gini", "entropy"]
     i=1
     for measure in attribute_measures:
         # Create and fit the Decision Tree classifier with the selected measure
@@ -417,7 +897,8 @@ def decision_tree_classifier(request):
         source_image_path = image_path
 
         # Specify the destination directory where you want to save the image
-        destination_directory = f"D:\\Projects\\Data Mining Assignment\\mern_starter-kit\\src\\assets\\DecisionTree{i}.png"
+    
+        destination_directory = f"C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/RuleBased/DecisionTree/DecisionTree{i}.png"
 
         # Use shutil.copy to copy the image to the destination directory
         shutil.copy(source_image_path, destination_directory)

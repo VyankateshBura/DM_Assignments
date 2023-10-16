@@ -13,5 +13,11 @@ urlpatterns = [
     path('regression/',views.regression_classifier,name = "regression_classifier"),
     path('naivebayes/',views.naive_bayesian_classifier,name = "naive_bayesian_classifier"),
     path('knn/',views.knn_classifier,name = "knn_classifier"),
+    path('agnes/',views.agnes,name = "agnes"),
+    path('diana/',views.diana,name = "diana"),
+    path('K_Means/',views.K_Means,name = "K_Means"),
+    path('K_Medoids/',views.K_Medoids,name = "K_Medoids"),
+    path('BIRCH/',views.BIRCH,name = "BIRCH"),
+    path('DBSCAN/',views.DBSCAN,name = "DBSCAN"),
     path('decimalscaling/',views.decimalScalingNormalization,name = "decimalScalingNormalization"),
 ]

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {Treebeard} from 'react-treebeard';
-import DecisionTree1 from "../../../assets/DecisionTree1.png"
-import DecisionTree2 from "../../../assets/DecisionTree2.png"
-import DecisionTree3 from "../../../assets/DecisionTree3.png"
+import DecisionTree1 from "../DecisionTree/DecisionTree1.png"
+import DecisionTree2 from "../DecisionTree/DecisionTree2.png"
+// import DecisionTree3 from "../DecisionTree/DecisionTree3.png"
 const Evaluation = ({ treeData }) => {
   const [treeStructure, setTreeStructure] = useState(null);
   console.log("Tree path",treeData,Object.keys(treeData)[0],Object.keys(treeData)[1],Object.keys(treeData)[2])
@@ -11,7 +11,7 @@ const Evaluation = ({ treeData }) => {
  
 
   useEffect(() => {
-    setTrees([DecisionTree1,DecisionTree2,DecisionTree3])
+    setTrees([DecisionTree1,DecisionTree2])
   }, []);
 
   const ExtractedRules = (rules) => {

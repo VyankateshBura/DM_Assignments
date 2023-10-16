@@ -19,8 +19,12 @@ import Correlation from './Pages/Correlation/Correlation';
 import DecisionTree from './Pages/RuleBased/DecisionTree/DecisionTree';
 import Evaluate from './Pages/RuleBased/Evaluation/Evaluate';
 import Regression from './Pages/Classifiers/Regression/Regression';
-
-
+import BIRCH from './Pages/BIRCH/BIRCH';
+import DBSCAN from './Pages/DBSCAN/DBSCAN';
+import K_Means from './Pages/K-Means/K-Means';
+import K_Medoids from './Pages/K-Medoids/K-Medoids';
+import HierarchialDIANA from './Pages/Hierarchial/DIANA/HierarchialDIANA';
+import HierarchialAGNES from './Pages/Hierarchial/AGNES/HierarchialAGNES';
 
 export const FileData = React.createContext();
 const App = () => {
@@ -53,6 +57,13 @@ const App = () => {
             <Route path='/assignment4/section2' element={<Evaluate/>}/>
             <Route path='/assignment5/section1' element={<Dashboard/>}/>
             <Route path='/assignment5/section2' element={<Regression/>}/>
+            <Route path='/assignment6/section1' element={<Dashboard/>}/>
+            <Route path='/assignment6/section2' element={<HierarchialAGNES/>}/>
+            <Route path='/assignment6/section3' element={<K_Means/>}/>
+            <Route path='/assignment6/section4' element={<K_Medoids/>}/>
+            <Route path='/assignment6/section5' element={<DBSCAN/>}/>
+            <Route path='/assignment6/section6' element={<BIRCH/>}/>
+            <Route path='/assignment6/section7' element={<HierarchialDIANA/>}/>
           </Routes>
         </BrowserRouter>
       </FileData.Provider>
