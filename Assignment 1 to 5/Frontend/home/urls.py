@@ -17,7 +17,7 @@ urlpatterns = [
     path('diana/',views.diana,name = "diana"),
     path('K_Means/',views.K_Means,name = "K_Means"),
     path('K_Medoids/',views.K_Medoids,name = "K_Medoids"),
-    path('BIRCH/',views.BIRCH,name = "BIRCH"),
+    path('BIRCH/',views.birchAlgo,name = "birchAlgo"),
     path('DBSCAN/',views.DBSCAN,name = "DBSCAN"),
     path('decimalscaling/',views.decimalScalingNormalization,name = "decimalScalingNormalization"),
 ]

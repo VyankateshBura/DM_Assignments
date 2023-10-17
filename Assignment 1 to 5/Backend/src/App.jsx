@@ -61,8 +61,8 @@ const App = () => {
             <Route path='/assignment6/section2' element={<HierarchialAGNES/>}/>
             <Route path='/assignment6/section3' element={<K_Means/>}/>
             <Route path='/assignment6/section4' element={<K_Medoids/>}/>
-            <Route path='/assignment6/section5' element={<DBSCAN/>}/>
-            <Route path='/assignment6/section6' element={<BIRCH/>}/>
+            <Route path='/assignment6/section5' element={<BIRCH/>}/>
+            <Route path='/assignment6/section6' element={<DBSCAN/>}/>
             <Route path='/assignment6/section7' element={<HierarchialDIANA/>}/>
           </Routes>
         </BrowserRouter>

@@ -64,6 +64,8 @@ from sklearn_extra.cluster import KMedoids
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
 from random import sample
+from kmedoids import KMedoids
+from sklearn.cluster import Birch
 import os
 
 
@@ -81,6 +83,7 @@ def agnesAlgo(data, k):
         while len(clusters) > k:
             min_distance = np.inf
             merge_clusters = None
+            
             for i in range(len(clusters)):
                 for j in range(i + 1, len(clusters)):
                     for point1 in clusters[i]:
@@ -90,6 +93,7 @@ def agnesAlgo(data, k):
                                 if distance < min_distance:
                                     min_distance = distance
                                     merge_clusters = (i, j)
+                                    
             if merge_clusters is None:
                 break
             i, j = merge_clusters
@@ -133,6 +137,7 @@ def plot_dendrogram(clusters, distances):
 def agnes(request):
     
     try:
+        
         dp = json.loads(request.body)
         df = pd.DataFrame(dp['arrayData'])
         # Assuming 'data' is your DataFrame
@@ -140,7 +145,6 @@ def agnes(request):
         def apply_zscore(column):
             return zscore_custom(column)
 
-        
         dc = df.copy()
         dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
 
@@ -149,9 +153,8 @@ def agnes(request):
         X = df.iloc[:, :-1]
         k = 3
         data = np.array(X, dtype=np.float64)
-        # result_clusters, distances = agnesAlgo(data, k)
-        # print(result_clusters)
-        
+        result_clusters, distances = agnesAlgo(data, k)
+        print("Here is the cluster ",result_clusters,distances)
         
         # Agnes Agglomerative Clustering
         linked = linkage(X, 'ward')
@@ -296,7 +299,6 @@ def K_Means(request):
         df = pd.DataFrame(dp['arrayData'])
         numerical_columns = df.select_dtypes(include=[np.number]).columns
         K_cluster = dp['k']
-        
         print("The number of cluster = ",K_cluster)
         dc = df.copy()
         dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
@@ -371,21 +373,52 @@ def K_Means(request):
 #         return self
 
 
-def k_medoids_scratch(D, k=3, max_iterations=100):
-    n, _ = D.shape
-    M = np.array(D[np.random.choice(n, k, replace=False)])
+# def k_medoids_scratch(D, k=3, max_iterations=100):
+#     n, _ = D.shape
+#     M = np.array(D[np.random.choice(n, k, replace=False)])
+
+#     for _ in range(max_iterations):
+#         D_M = cdist(D, M)
+#         C = np.argmin(D_M, axis=1)
+
+#         M_new = np.array([D[C == i].mean(axis=0) for i in range(k)])
+#         if np.all(M == M_new):
+#             break
+#         M = M_new
+
+#     return C, M
+
+def k_medoids_scratch(X, k=2, max_iterations=100):
+    n = X.shape[0]  # Number of data points
+    m = X.shape[1]  # Number of features
+
+    # Initialize randomly
+    medoids = sample(range(n), k)
 
     for _ in range(max_iterations):
-        D_M = cdist(D, M)
-        C = np.argmin(D_M, axis=1)
+        clusters = {}
+        for i in range(k):
+            clusters[i] = []
 
-        M_new = np.array([D[C == i].mean(axis=0) for i in range(k)])
-        if np.all(M == M_new):
+        for point_idx in range(n):
+            distances = [np.linalg.norm(X[point_idx] - X[m_idx]) for m_idx in medoids]
+            cluster_idx = np.argmin(distances)
+            clusters[cluster_idx].append(point_idx)
+
+        new_medoids = []
+
+        for i in range(k):
+            cluster_points = X[clusters[i]]
+            costs = [sum(np.linalg.norm(cluster_points - cluster_points[j], axis=1)) for j in range(len(clusters[i]))]
+            new_medoid_idx = clusters[i][np.argmin(costs)]
+            new_medoids.append(new_medoid_idx)
+
+        if set(medoids) == set(new_medoids):
             break
-        M = M_new
 
-    return C, M
+        medoids = new_medoids
 
+    return medoids, clusters
 
 @csrf_exempt
 def K_Medoids(request):
@@ -393,6 +426,7 @@ def K_Medoids(request):
     try:
         dp = json.loads(request.body)
         df = pd.DataFrame(dp['arrayData'])
+        K_clusters = dp['k']
         # Assuming 'data' is your DataFrame
         numerical_columns = df.select_dtypes(include=[np.number]).columns
         def apply_zscore(column):
@@ -406,23 +440,72 @@ def K_Medoids(request):
         # X = [[row[attribute1], row[attribute2]] for row in data]````
         X = df.iloc[:, :-1]
         k = 3
-        # data = np.array(X, dtype=np.float64)
+        data = np.array(X, dtype=np.float64)
+        # print(data)
 
         # Using K-Medoids from scratch
-        # results_scratch, medoids_scratch = k_medoids_scratch(data, k)
+        medoids_scratch, clusters_scratch  = k_medoids_scratch(data, K_clusters)
 
         # Using built-in K-Medoids
-        # kmedoids_builtin = KMedoids(n_clusters=k)
-        # results_builtin = kmedoids_builtin.fit_predict(dc.values)
-        # medoids_builtin = dc.values[kmedoids_builtin.medoid_indices_]
+        # Compute the distance matrix
+        D = pairwise_distances(X, metric='euclidean')
 
-        # return results_scratch, medoids_scratch, results_builtin, medoids_builtin
+        # Initialize KMedoids
+        kmedoids = KMedoids(n_clusters=K_clusters, random_state=0)
 
-        # print(results_scratch,medoids_builtin)
+        # Fit the model
+        kmedoids.fit(D)
+
+        # Get cluster labels
+        clusters_builtin = kmedoids.labels_.tolist()
+        
+        # Plotting clusters from built-in KMedoids
+        # plt.figure(figsize=(8, 6))
+        # for i in range(k):
+        #     cluster_data = X[np.array(clusters_builtin) == i]
+        #     plt.scatter(cluster_data[:, 0], cluster_data[:, 1], label=f'Cluster {i+1}')
+
+        # # Plotting medoids
+        # medoids_data = X[medoids_builtin]
+        # plt.scatter(medoids_data[:, 0], medoids_data[:, 1], c='black', marker='x', label='Medoids')
+
+        # plt.title('Clusters from Built-in KMedoids')
+        # plt.xlabel('Feature 1')
+        # plt.ylabel('Feature 2')
+        # plt.legend()
+
+        # # Save the image
+        # plt.savefig('clusters_plot.png')
+
+        # # Show the plot
+        # plt.close()
+
+        # Get cluster medoids
+        medoids_builtin = kmedoids.medoid_indices_.tolist()
+        clusters_builtin_final=[]
+        for x in medoids_builtin:
+            cl=[]
+            i=1
+            print(x)
+            for y in clusters_builtin:
+                
+                if x==medoids_builtin[y]:
+                    cl.append(i)
+                i+=1
+            clusters_builtin_final.append(cl)
+                
+        print(clusters_builtin_final)
+        
+        # print(type(medoids_scratch),type(clusters_scratch))
+        serialized_object_scratch= json.dumps({'list1': medoids_scratch, 'list2': clusters_scratch})
+        serialized_object_builtin = json.dumps({'list1': medoids_builtin, 'list2': clusters_builtin_final})
+        
+        # print(serialized_object_scratch)
         results = {
-            "ClusterNumber":'result_clusters'
+            "clusters_scratch":  serialized_object_scratch,
+            "clusters_builtin":  serialized_object_builtin
         }
-        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+        return JsonResponse({"result":"K Medoids Clustering completed","data":results})
         
     except Exception as e:
         print(e)
@@ -431,8 +514,92 @@ def K_Medoids(request):
     
 
 
+
+
+class BIRCH:
+    def __init__(self, threshold, branching_factor, n_clusters):
+        self.threshold = threshold
+        self.branching_factor = branching_factor
+        self.n_clusters = n_clusters
+        self.root = None
+
+    def fit(self, X):
+        self.root = Node(self.branching_factor, self.threshold)
+        self.root.build_subclusters(X)
+
+    def predict(self, X):
+        labels = []
+        for point in X:
+            labels.append(self.root.predict(point))
+        return labels
+
+class Node:
+    def __init__(self, branching_factor, threshold):
+        self.branching_factor = branching_factor
+        self.threshold = threshold
+        self.n = 0
+        self.ls = 0
+        self.ss = 0
+        self.children = []
+        self.subclusters = []
+
+    def add_child(self, node):
+        self.children.append(node)
+
+    def build_subclusters(self, X):
+        self.n = X.shape[0]
+        self.ls = np.sum(X, axis=0)
+        self.ss = np.sum(np.square(X), axis=0)
+
+        self.subclusters.append(Subcluster(X))
+        if self.n > self.branching_factor:
+            centroids = [subcluster.centroid for subcluster in self.subclusters]
+            centroids = np.array(centroids)
+            while len(self.subclusters) > self.branching_factor:
+                closest_pair = self.find_closest_pair(centroids)
+                new_subcluster = closest_pair[0].merge(closest_pair[1])
+                self.subclusters.remove(closest_pair[0])
+                self.subclusters.remove(closest_pair[1])
+                self.subclusters.append(new_subcluster)
+                centroids = [subcluster.centroid for subcluster in self.subclusters]
+                centroids = np.array(centroids)
+            for subcluster in self.subclusters:
+                child = Node(self.branching_factor, self.threshold)
+                child.build_subclusters(subcluster.points)
+                self.add_child(child)
+
+    def find_closest_pair(self, centroids):
+        min_dist = np.inf
+        closest_pair = None
+        for i in range(len(centroids)):
+            for j in range(i + 1, len(centroids)):
+                dist = np.linalg.norm(centroids[i] - centroids[j])
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_pair = (self.subclusters[i], self.subclusters[j])
+        return closest_pair
+
+    def predict(self, point):
+        if self.children:
+            closest_child = min(self.children, key=lambda child: np.linalg.norm(child.subclusters[0].centroid - point))
+            return closest_child.predict(point)
+        else:
+            return self.subclusters[0].centroid
+
+
+class Subcluster:
+    def __init__(self, points):
+        self.points = points
+        self.n = points.shape[0]
+        self.ls = np.sum(points, axis=0)
+        self.ss = np.sum(np.square(points), axis=0)
+        self.centroid = self.ls / self.n
+
+    def merge(self, other_subcluster):
+        merged_points = np.concatenate((self.points, other_subcluster.points), axis=0)
+        return Subcluster(merged_points)
 @csrf_exempt
-def BIRCH(request):
+def birchAlgo(request):
     
     try:
         dp = json.loads(request.body)
@@ -451,29 +618,16 @@ def BIRCH(request):
         X = df.iloc[:, :-1]
         k = 3
         data = np.array(X, dtype=np.float64)
-        result_clusters, distances = agnesAlgo(data, k)
-        print(result_clusters)
+        birch_custom = BIRCH(threshold=0.5, branching_factor=10, n_clusters=3)
+        birch_custom.fit(X)
+        labels_custom = birch_custom.predict(X)
+        print(labels_custom)
         
         
-        # Agnes Agglomerative Clustering
-        # linked = linkage(X, 'ward')
-        # labelList = range(1, len(X) + 1)
-
-        # plt.figure(figsize=(10, 7))
-        # dendrogram(linked,
-        #            orientation='top',
-        #            labels=labelList,
-        #            distance_sort='descending',
-        #            show_leaf_counts=True)
-        
-        
-        # Save the image to a specific location
-        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
-        # plot_dendrogram(result_clusters, distances)
-        # plt.savefig(image_path)
-        # plt.close()
-
-        
+        birch_builtin = Birch(threshold=0.5, branching_factor=10, n_clusters=3)
+        birch_builtin.fit(X)
+        labels_builtin = birch_builtin.predict(X)
+        print(labels_builtin)     
         results = {
             "ClusterNumber":'result_clusters'
         }

@@ -7,7 +7,7 @@ import axios from 'axios'
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 
-const K_Medoids_plot = ({ data, url, title }) => {
+const BIRCHPLOT = ({ data, url, title }) => {
 
     const [cluster, setCluster] = useState([1,3,5,7,9]);
     const [clusters_scratch, setClusterScratch] = useState([]);
@@ -127,4 +127,4 @@ const K_Medoids_plot = ({ data, url, title }) => {
     );
 };
 
-export default K_Medoids_plot;
+export default BIRCHPLOT;

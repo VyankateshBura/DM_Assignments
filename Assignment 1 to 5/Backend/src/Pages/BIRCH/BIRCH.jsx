@@ -21,7 +21,7 @@ import axios from 'axios'
 import MainListItems from '../dashboard/MainListItems';
 import {  SecondaryListItems } from '../dashboard/listItems';
 import { FileData } from '../../App';
-// import DecisionTreeChart from './DecisionTreeChart';
+import BIRCHPLOT from './BIRCHPLOT';
 
 function Copyright(props) {
   return (
@@ -175,7 +175,7 @@ export default function BIRCH() {
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                   {/* <Orders /> */}
                   {/* <LogTable/> */}
-                  {/* {conn.fdata!=null?<DecisionTreeChart data= {conn.fdata}/>:""} */}
+                  {conn.fdata!=null?<BIRCHPLOT data= {conn.fdata} url={"BIRCH"}/>:""}
                 </Paper>
               </Grid>
             </Grid>
