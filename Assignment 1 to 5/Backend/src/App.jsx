@@ -25,11 +25,11 @@ import K_Means from './Pages/K-Means/K-Means';
 import K_Medoids from './Pages/K-Medoids/K-Medoids';
 import HierarchialDIANA from './Pages/Hierarchial/DIANA/HierarchialDIANA';
 import HierarchialAGNES from './Pages/Hierarchial/AGNES/HierarchialAGNES';
-
+import Apriori from './Pages/Apriori/Apriori';
 export const FileData = React.createContext();
 const App = () => {
   const [fdata, setFdata] = useState(null)
- 
+  
   
   return (
       <FileData.Provider value={{fdata,setFdata}}>
@@ -64,6 +64,8 @@ const App = () => {
             <Route path='/assignment6/section5' element={<BIRCH/>}/>
             <Route path='/assignment6/section6' element={<DBSCAN/>}/>
             <Route path='/assignment6/section7' element={<HierarchialDIANA/>}/>
+            <Route path='/assignment7/section1' element={<Dashboard/>}/>
+            <Route path='/assignment7/section2' element={<Apriori/>}/>
           </Routes>
         </BrowserRouter>
       </FileData.Provider>

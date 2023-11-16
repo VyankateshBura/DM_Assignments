@@ -21,7 +21,7 @@ import axios from 'axios'
 import MainListItems from '../dashboard/MainListItems';
 import {  SecondaryListItems } from '../dashboard/listItems';
 import { FileData } from '../../App';
-import DBSCANPLOT from './DBSCANPLOT';
+import AprioriPLOT from './AprioriPLOT';
 
 function Copyright(props) {
   return (
@@ -85,7 +85,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 
-export default function BIRCH() {
+export default function Apriori() {
   const [open, setOpen] = React.useState(true);
   const conn = React.useContext(FileData);
   const toggleDrawer = () => {
@@ -123,7 +123,7 @@ export default function BIRCH() {
               noWrap
               sx={{ flexGrow: 1 }}
             >
-             DBSCAN
+             Apriori
             </Typography>
             <IconButton color="inherit">
               <Badge badgeContent={5} color="secondary">
@@ -175,7 +175,7 @@ export default function BIRCH() {
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                   {/* <Orders /> */}
                   {/* <LogTable/> */}
-                  {conn.fdata!=null?<DBSCANPLOT data= {conn.fdata} url={"DBSCAN"}/>:""}
+                  {conn.fdata!=null?<AprioriPLOT data= {conn.fdata} url={"APRIORI"}/>:""}
                 </Paper>
               </Grid>
             </Grid>

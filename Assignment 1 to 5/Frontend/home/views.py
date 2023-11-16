@@ -33,6 +33,7 @@ import statistics
 import pandas as pd
 import numpy as np
 from scipy.stats import chi2_contingency,zscore,pearsonr
+import sklearn
 from sklearn.preprocessing import MinMaxScaler,StandardScaler
 from sklearn import datasets
 from sklearn.metrics import (
@@ -55,6 +56,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 import tempfile
 import shutil
 from scipy.spatial.distance import euclidean
@@ -67,6 +70,201 @@ from random import sample
 from kmedoids import KMedoids
 from sklearn.cluster import Birch
 import os
+from sklearn.tree import _tree
+from sklearn.tree import export_graphviz
+import graphviz
+# from anytree import Node, RenderTree
+from .BIRCH import birch
+from .DBSCAN import dbscan
+from .APRIORI import generate_rules,APRIORI
+from sklearn.cluster import DBSCAN
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori, association_rules
+import warnings
+
+
+
+def web_crawler(seed_url, method='dfs'):
+    # Implement DFS or BFS crawler logic here
+    # Return a list of crawled links
+    # For simplicity, I'm using a basic example of BFS crawler
+    visited = set()
+    queue = [seed_url]
+    links = []
+
+    while queue:
+        current_url = queue.pop(0)
+
+        if current_url not in visited:
+            try:
+                response = requests.get(current_url)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                links_on_page = [a['href'] for a in soup.find_all('a', href=True)]
+                links.extend(links_on_page)
+                visited.add(current_url)
+                queue.extend(links_on_page)
+            except Exception as e:
+                print(f"Error crawling {current_url}: {e}")
+
+    return links
+
+@csrf_exempt
+def crawl(request):
+    try:
+        seed_url = request.POST.get('seed_url', '')
+        if seed_url:
+            links = web_crawler(seed_url)
+            return JsonResponse({'links': links})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"msg":"Error occurred "})
+
+
+@csrf_exempt
+def calculate_hits(request):
+    try:
+        
+        return JsonResponse({'msg':'Request processed.....'})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"msg":"Error occurred "})
+
+
+@csrf_exempt
+def calculate_pagerank(request):
+    try:
+        
+        return JsonResponse({'msg':'Request processed.....'})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"msg":"Error occurred "})
+
+@csrf_exempt
+def AprioriAlgo(request):
+    try:
+    
+        # Step 1: Load and preprocess the dataset
+        # url = "https://archive.ics.uci.edu/ml/machine-learning-databases/voting-records/house-votes-84.data"
+        column_names = [
+            "Class Name",
+            "handicapped-infants",
+            "water-project-cost-sharing",
+            "adoption-of-the-budget-resolution",
+            "physician-fee-freeze",
+            "el-salvador-aid",
+            "religious-groups-in-schools",
+            "anti-satellite-test-ban",
+            "aid-to-nicaraguan-contras",
+            "mx-missile",
+            "immigration",
+            "synfuels-corporation-cutback",
+            "education-spending",
+            "superfund-right-to-sue",
+            "crime",
+            "duty-free-exports",
+            "export-administration-act-south-africa",
+        ]
+        # warnings.filterwarnings("ignore", category=DeprecationWarning)
+        # df = pd.read_csv(url, header=None, names=column_names)
+
+        # # Using only 15% of the data for processing
+        # df = df.sample(frac=0.25, random_state=1)
+
+        # df = df.fillna(df.mode().iloc[0])
+        # df = df.replace({"y": 1, "n": 0, "?": 0})
+
+        # Step 2: Implement the Apriori algorithm with varying support, confidence, and maximum rule length
+        supports = [0.2]  # Vary support values
+        confidences = [0.3]  # Vary confidence values
+        max_len = 2  # Maximum rule length
+
+        results = []
+     
+        # df.to_csv("data.csv",index=False)
+
+        df = pd.read_csv("D:/Projects/Data Mining Assignment/Assignment 1 to 5/Frontend/data.csv", header=None, names=column_names)
+        
+
+        for support in supports:
+            for confidence in confidences:
+                
+                frequent_itemsets = APRIORI(df,support, max_len,column_names)
+                # print(frequent_itemsets)
+                test_data = dict()
+                
+                for itemset in frequent_itemsets:
+                    test_data.update(itemset)
+                rules = generate_rules(test_data, min_confidence=confidence)
+                
+                # Using the Apriori algorithm
+                # frequent_itemsets = apriori(df.drop("Class Name", axis=1), support, max_len)
+              
+                # # Using the association rules function
+                # rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=confidence)
+                # print(rules)
+                # Convert frozensets to lists for JSON serialization
+                # rules['antecedents'] = rules['antecedents'].apply(list)
+                # rules['consequents'] = rules['consequents'].apply(list)
+
+                # # Calculate the Kulczynski measure manually
+                # rules['kulczynski'] = (rules['support'] + rules['confidence']) / 2
+                # print("Support",support)
+                # print("confidence",confidence)
+                # print("frequent_itemsets",len(frequent_itemsets))
+                # print("total_rules",len(rules))
+                # print("interestingness_measures",rules.to_dict(orient="records"))
+                results.append({
+                    "frequent_itemsets": len(frequent_itemsets),
+                    "total_rules": len(rules),
+                    "Rules": rules
+                })
+              
+            
+          
+        return JsonResponse({"results": results})
+
+
+
+
+        # Step 3: Tabulate the results for frequent item sets and the total number of generated rules
+        # results_df = pd.DataFrame(results, columns=["Support", "Confidence", "Frequent Itemsets", "Total Rules"])
+        # print(results_df)
+
+        # interestingness_measures = ["lift", "leverage", "conviction", "confidence", "kulczynski", "cosine"]
+
+        # for support, confidence, _, _ in results:
+        #     frequent_itemsets = apriori(df.drop("Class Name", axis=1), min_support=support, use_colnames=True, max_len=max_len)
+        #     rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=confidence)
+        #     print(f"\nSupport: {support}, Confidence: {confidence}\n")
+            # print(rules)
+            # print(type(rules))
+            # for measure in interestingness_measures:
+            #     if measure == 'confidence':
+            #         continue  # Skip calculating confidence again
+            #     if measure == 'lift':
+            #         rules[measure] = rules['lift']
+            #     elif measure == 'leverage':
+            #         rules[measure] = rules['leverage']
+            #     elif measure == 'conviction':
+            #         rules[measure] = rules['conviction']
+            #     elif measure == 'kulczynski':
+            #         rules[measure] = (rules['support'] + rules['confidence']) / 2
+            #     elif measure == 'cosine':
+            #         rules[measure] = rules['cosine']
+
+            # print(rules)
+
+        
+        return JsonResponse({"msg":"Apriori Algo Executed.... "})
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({"msg":"Error occurred "})
+
+
+
+
+
 
 
 def agnesAlgo(data, k):
@@ -129,7 +327,7 @@ def plot_dendrogram(clusters, distances):
         for j in range(i + 1, len(distances)):
             plt.plot([i, j], [distances[i, j], distances[i, j]], c='b')
     plt.show()
-    image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/dendrogram.png'
+    image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/dendrogram.png'
     plt.savefig(image_path)
     plt.close()
 
@@ -171,7 +369,7 @@ def agnes(request):
         # Save the image to a specific location
         # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
         # plot_dendrogram(result_clusters, distances)
-        image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/AGNES/dendrogram.png'
+        image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/AGNES/dendrogram.png'
         plt.savefig(image_path)
         plt.close()
 
@@ -225,7 +423,7 @@ def diana(request):
         # Save the image to a specific location
         # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
         # plot_dendrogram(result_clusters, distances)
-        image_path = 'C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/Hierarchial/DIANA/dendrogram.png'
+        image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/DIANA/dendrogram.png'
         plt.savefig(image_path)
         plt.close()
 
@@ -322,7 +520,7 @@ def K_Means(request):
         plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
 
         # Save the image
-        plt.savefig('C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/K-Means/kmeans_clusters.png')
+        plt.savefig('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/K-Means/kmeans_clusters.png')
         plt.close()
 
         results = {
@@ -336,57 +534,7 @@ def K_Means(request):
         print(e)
         return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
     
-    
-# class KMedoids:
-#     def __init__(self, k=2, max_iterations=100):
-#         self.k = k
-#         self.max_iterations = max_iterations
 
-#     def fit(self, data):
-#         n, _ = data.shape
-#         medoids = sample(range(n), self.k)
-
-#         for _ in range(self.max_iterations):
-#             clusters = [[] for _ in range(self.k)]
-
-#             for i in range(n):
-#                 distances = pairwise_distances(data, [data[i]], metric='euclidean').ravel()
-#                 cluster = np.argmin(distances)
-#                 clusters[cluster].append(i)
-
-#             new_medoids = []
-#             for cluster in clusters:
-#                 cluster_distances = pairwise_distances(data[cluster], metric='euclidean')
-#                 total_distance = cluster_distances.sum(axis=1)
-#                 min_index = cluster[np.argmin(total_distance)]
-#                 new_medoids.append(min_index)
-
-#             if set(medoids) == set(new_medoids):
-#                 break
-#             medoids = new_medoids
-
-#         self.labels_ = np.zeros(n)
-#         for i, cluster in enumerate(clusters):
-#             self.labels_[cluster] = i
-
-#         self.cluster_centers_ = data[medoids]
-#         return self
-
-
-# def k_medoids_scratch(D, k=3, max_iterations=100):
-#     n, _ = D.shape
-#     M = np.array(D[np.random.choice(n, k, replace=False)])
-
-#     for _ in range(max_iterations):
-#         D_M = cdist(D, M)
-#         C = np.argmin(D_M, axis=1)
-
-#         M_new = np.array([D[C == i].mean(axis=0) for i in range(k)])
-#         if np.all(M == M_new):
-#             break
-#         M = M_new
-
-#     return C, M
 
 def k_medoids_scratch(X, k=2, max_iterations=100):
     n = X.shape[0]  # Number of data points
@@ -516,88 +664,75 @@ def K_Medoids(request):
 
 
 
-class BIRCH:
-    def __init__(self, threshold, branching_factor, n_clusters):
-        self.threshold = threshold
-        self.branching_factor = branching_factor
-        self.n_clusters = n_clusters
-        self.root = None
+# class BIRCH:
+#     def __init__(self, threshold, branching_factor, n_clusters):
+#         self.threshold = threshold
+#         self.branching_factor = branching_factor
+#         self.n_clusters = n_clusters
+#         self.root = None
+#         self.subclusters = []
 
-    def fit(self, X):
-        self.root = Node(self.branching_factor, self.threshold)
-        self.root.build_subclusters(X)
+#     def fit(self, X):
+#         self.root = SubclusterNode(X[0])
+#         self.root.is_leaf = True
+#         self.root.N = 1
+#         self.subclusters.append(self.root)
+#         for i in range(1, X.shape[0]):
+#             self.insert_new_point(X[i])
 
-    def predict(self, X):
-        labels = []
-        for point in X:
-            labels.append(self.root.predict(point))
-        return labels
+#     def insert_new_point(self, point):
+#         self.root = self.insert(self.root, point)
 
-class Node:
-    def __init__(self, branching_factor, threshold):
-        self.branching_factor = branching_factor
-        self.threshold = threshold
-        self.n = 0
-        self.ls = 0
-        self.ss = 0
-        self.children = []
-        self.subclusters = []
-
-    def add_child(self, node):
-        self.children.append(node)
-
-    def build_subclusters(self, X):
-        self.n = X.shape[0]
-        self.ls = np.sum(X, axis=0)
-        self.ss = np.sum(np.square(X), axis=0)
-
-        self.subclusters.append(Subcluster(X))
-        if self.n > self.branching_factor:
-            centroids = [subcluster.centroid for subcluster in self.subclusters]
-            centroids = np.array(centroids)
-            while len(self.subclusters) > self.branching_factor:
-                closest_pair = self.find_closest_pair(centroids)
-                new_subcluster = closest_pair[0].merge(closest_pair[1])
-                self.subclusters.remove(closest_pair[0])
-                self.subclusters.remove(closest_pair[1])
-                self.subclusters.append(new_subcluster)
-                centroids = [subcluster.centroid for subcluster in self.subclusters]
-                centroids = np.array(centroids)
-            for subcluster in self.subclusters:
-                child = Node(self.branching_factor, self.threshold)
-                child.build_subclusters(subcluster.points)
-                self.add_child(child)
-
-    def find_closest_pair(self, centroids):
-        min_dist = np.inf
-        closest_pair = None
-        for i in range(len(centroids)):
-            for j in range(i + 1, len(centroids)):
-                dist = np.linalg.norm(centroids[i] - centroids[j])
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_pair = (self.subclusters[i], self.subclusters[j])
-        return closest_pair
-
-    def predict(self, point):
-        if self.children:
-            closest_child = min(self.children, key=lambda child: np.linalg.norm(child.subclusters[0].centroid - point))
-            return closest_child.predict(point)
-        else:
-            return self.subclusters[0].centroid
+#     def insert(self, node, point):
+#         if node.is_leaf:
+#             if node.N < self.branching_factor:
+#                 node.insert(point)
+#                 return node
+#             else:
+#                 subcluster = SubclusterNode(point)
+#                 subcluster.N = 1
+#                 self.subclusters.append(subcluster)
+#                 return subcluster
+#         else:
+#             best_subcluster = None
+#             best_distance = np.inf
+#             for child in node.children:
+#                 distance = np.linalg.norm(point - child.centroid)
+#                 if distance < best_distance:
+#                     best_distance = distance
+#                     best_subcluster = child
+#             if best_subcluster is not None:
+#                 updated_subcluster = self.insert(best_subcluster, point)
+#                 node.update_centroid()
+#                 return node
+#             else:
+#                 # Handle the case when best_subcluster is None
+#                 return node  # or perform some other action as needed
+#     def print_tree(self, node, level=0):
+#         if node:
+#             print('  ' * level + str(node.centroid))
+#             if not node.is_leaf:
+#                 for child in node.children:
+#                     self.print_tree(child, level + 1)
 
 
-class Subcluster:
-    def __init__(self, points):
-        self.points = points
-        self.n = points.shape[0]
-        self.ls = np.sum(points, axis=0)
-        self.ss = np.sum(np.square(points), axis=0)
-        self.centroid = self.ls / self.n
+# class SubclusterNode:
+#     def __init__(self, point):
+#         self.points = [point]
+#         self.N = 0
+#         self.centroid = point
+#         self.children = []
+#         self.is_leaf = False
 
-    def merge(self, other_subcluster):
-        merged_points = np.concatenate((self.points, other_subcluster.points), axis=0)
-        return Subcluster(merged_points)
+#     def insert(self, point):
+#         self.points.append(point)
+#         self.N += 1
+#         self.update_centroid()
+
+#     def update_centroid(self):
+#         self.centroid = np.mean(self.points, axis=0)
+
+
 @csrf_exempt
 def birchAlgo(request):
     
@@ -616,22 +751,73 @@ def birchAlgo(request):
         # Assuming data contains 'target' column with class labels
         # X = [[row[attribute1], row[attribute2]] for row in data]````
         X = df.iloc[:, :-1]
-        k = 3
         data = np.array(X, dtype=np.float64)
-        birch_custom = BIRCH(threshold=0.5, branching_factor=10, n_clusters=3)
-        birch_custom.fit(X)
-        labels_custom = birch_custom.predict(X)
-        print(labels_custom)
+        # birch_custom = BIRCH(threshold=500, branching_factor=2, n_clusters=3)
+        # birch_custom.fit(data)
+        # # Define the tree structure
+        # root = Node(str(birch_custom.root.centroid))
+        # for child in birch_custom.root.children:
+        #     child_node = Node(str(child.centroid), parent=root)
+        #     for subchild in child.children:
+        #         subchild_node = Node(str(subchild.centroid), parent=child_node)
+
+        # # Print the tree structure
+        # for pre, fill, node in RenderTree(root):
+        #     print("%s%s" % (pre, node.name))
         
         
-        birch_builtin = Birch(threshold=0.5, branching_factor=10, n_clusters=3)
-        birch_builtin.fit(X)
-        labels_builtin = birch_builtin.predict(X)
-        print(labels_builtin)     
+        # # Create a basic plot for the tree structure
+        # fig, ax = plt.subplots(figsize=(6, 6))
+        # for pre, _, node in RenderTree(root):
+        #     x, y = len(pre) / 2, node.depth * -0.5
+        #     ax.text(x, y, node.name, ha='center', va='center', bbox=dict(facecolor='lightblue', alpha=0.5, boxstyle='round'))
+
+        # ax.set_axis_off()
+        # plt.savefig('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Frontend/test.png')
+        # Import required libraries and modules
+
+
+        '''Birch.py file functions'''
+       
+        # model = birch(data,6,50)
+        # model.process()
+
+        # clusters = model.get_cf_cluster()
+        # print(clusters)
+        
+        # Creating the BIRCH clustering model
+        model = Birch(branching_factor = 50, n_clusters = None, threshold = 1.5)
+
+        # Fit the data (Training)
+        model.fit(data)
+
+      
+
+        # Print the CF Tree
+        def print_tree(node, depth=0):
+            if hasattr(node, 'subcluster_centers_'):
+                print('  ' * depth, f"Subcluster with {len(node.subcluster_centers_)} subclusters")
+            else:
+                print('  ' * depth, "CF node")
+
+            if hasattr(node, 'children_'):
+                for child in node.children_:
+                    print_tree(child, depth + 1)
+
+
+        print_tree(model.root_)
+
+        # # Creating a scatter plot
+        # plt.scatter(X[:, 0], X[:, 1], c = pred, cmap = 'rainbow', alpha = 0.7, edgecolors = 'b')
+        # image_path = os.path.join('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/BIRCH', 'dendrogram.png')
+        # plt.savefig(image_path)
+        # plt.close()
+       
+            
         results = {
             "ClusterNumber":'result_clusters'
         }
-        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+        return JsonResponse({"result":"BIRCH completed","data":results})
         
     except Exception as e:
         print(e)
@@ -639,7 +825,7 @@ def birchAlgo(request):
     
   
 @csrf_exempt
-def DBSCAN(request):
+def DBSCANAlgo(request):
     
     try:
         dp = json.loads(request.body)
@@ -658,33 +844,69 @@ def DBSCAN(request):
         X = df.iloc[:, :-1]
         k = 3
         data = np.array(X, dtype=np.float64)
-        result_clusters, distances = agnesAlgo(data, k)
-        print(result_clusters)
+        # result_clusters, distances = agnesAlgo(data, k)
+        # print(result_clusters)
         
-        
-        # Agnes Agglomerative Clustering
-        # linked = linkage(X, 'ward')
-        # labelList = range(1, len(X) + 1)
+        # Standardize the data
+        Standardized_data = StandardScaler().fit_transform(data)
+        # model = dbscan()
 
-        # plt.figure(figsize=(10, 7))
-        # dendrogram(linked,
-        #            orientation='top',
-        #            labels=labelList,
-        #            distance_sort='descending',
-        #            show_leaf_counts=True)
+        # cl =model.predict(Standardized_data)
+        # print(cl)
         
-        
-        # Save the image to a specific location
-        # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
-        # plot_dendrogram(result_clusters, distances)
-        # plt.savefig(image_path)
-        # plt.close()
+        print(sklearn.__version__)
+        # Compute DBSCAN
+        dbscan = DBSCAN(eps=0.4, min_samples=5)
+        dbscan.fit(Standardized_data)
 
+        # Extract the labels and core sample indices
+        labels = dbscan.labels_
+        core_samples_mask = np.zeros_like(labels, dtype=bool)
+        core_samples_mask[dbscan.core_sample_indices_] = True
+
+        # Number of clusters in labels, ignoring noise if present.
+        n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+
+        # Plot result
+        unique_labels = set(labels)
+        colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+        print(n_clusters_,unique_labels,colors)
+        # Plot result
+        # Create the plot
+        for k, col in zip(unique_labels, colors):
+            if k == -1:
+                # Black used for noise.
+                col = [0, 0, 0, 1]
+
+            class_member_mask = (labels == k)
+
+            xy = Standardized_data[class_member_mask & core_samples_mask]
+            plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col), markeredgecolor='k', markersize=14)
+
+            xy = Standardized_data[class_member_mask & ~core_samples_mask]
+            plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col), markeredgecolor='k', markersize=6)
+
+        plt.title('Estimated number of clusters: %d' % n_clusters_)
+        # plt.show()
+        plt.savefig('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/DBSCAN/DBSCAN.png')
+   
         
-        results = {
-            "ClusterNumber":'result_clusters'
-        }
-        return JsonResponse({"result":"Agnes Agglomerative Clustering completed","data":results})
+
+       # Convert the tuple to a list for serialization
+        colors = [list(color) for color in colors]
+
+        # Convert int64 type to regular integer
+        n_clusters_ = int(n_clusters_)
+
+        # Convert the set to a list
+        unique_labels = list(unique_labels)
+
+        # Create a dictionary with the data
+        data = {"unique_labels": unique_labels, "colors": colors}
+
+        # Serialize the data
+        serialized_data = json.dumps(data)
+        return JsonResponse({"result":"DBSCAN Clustering completed","data":'serialized_data'})
         
     except Exception as e:
         print(e)
@@ -1052,7 +1274,7 @@ def decision_tree_classifier(request):
 
         # Specify the destination directory where you want to save the image
     
-        destination_directory = f"C:/Users/Admin/Desktop/Test/DM_Assignments/Assignment 1 to 5/Backend/src/Pages/RuleBased/DecisionTree/DecisionTree{i}.png"
+        destination_directory = f"D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/RuleBased/DecisionTree/DecisionTree{i}.png"
 
         # Use shutil.copy to copy the image to the destination directory
         shutil.copy(source_image_path, destination_directory)

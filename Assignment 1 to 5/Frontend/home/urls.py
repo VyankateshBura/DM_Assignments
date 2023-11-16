@@ -18,6 +18,10 @@ urlpatterns = [
     path('K_Means/',views.K_Means,name = "K_Means"),
     path('K_Medoids/',views.K_Medoids,name = "K_Medoids"),
     path('BIRCH/',views.birchAlgo,name = "birchAlgo"),
-    path('DBSCAN/',views.DBSCAN,name = "DBSCAN"),
+    path('DBSCAN/',views.DBSCANAlgo,name = "DBSCANAlgo"),
+    path('APRIORI/',views.AprioriAlgo,name = "AprioriAlgo"),
     path('decimalscaling/',views.decimalScalingNormalization,name = "decimalScalingNormalization"),
+    path('crawl/', views.crawl, name='crawl'),
+    path('calculate_pagerank/', views.calculate_pagerank, name='calculate_pagerank'),
+    path('calculate_hits/', views.calculate_hits, name='calculate_hits'),
 ]
