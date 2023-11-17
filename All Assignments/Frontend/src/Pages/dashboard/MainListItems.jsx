@@ -102,6 +102,22 @@ const MainListItems = ()=>{
           
         ],
       },
+      {
+        id: 8,
+        title: 'Assignment 8',
+        sections: [
+          // { id: 1, title: 'File/CSV Upload', content: 'Content of section 1...' },
+          { id: 1, title: 'Crawler', content: 'Content of section 2...' },
+          { id: 2, title: 'PageRank Algorithm', content: 'Content of section 3...' },
+          { id: 3, title: 'HITS Algorithm', content: 'Content of section 4...' },
+          // { id: 3, title: 'K-Means', content: 'Content of section 3...' },
+          // { id: 4, title: 'K-Medoids', content: 'Content of section 4...' },
+          // { id: 5, title: 'BIRCH', content: 'Content of section 5...' },
+          // { id: 6, title: 'DBSCAN', content: 'Content of section 6...' },
+          // { id: 7, title: 'DIANA', content: 'Content of section 7...' },
+          
+        ],
+      },
     ];
     const handleAssignmentClick = (assignment) => {
       if (expandedAssignment === assignment) {

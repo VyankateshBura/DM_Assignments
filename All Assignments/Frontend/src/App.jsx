@@ -26,6 +26,11 @@ import K_Medoids from './Pages/K-Medoids/K-Medoids';
 import HierarchialDIANA from './Pages/Hierarchial/DIANA/HierarchialDIANA';
 import HierarchialAGNES from './Pages/Hierarchial/AGNES/HierarchialAGNES';
 import Apriori from './Pages/Apriori/Apriori';
+import Crawler from "./Pages/Crawler/Crawler"
+import PageRank from "./Pages/PageRank/PageRank"
+import HITS from "./Pages/HITS/HITS"
+
+
 export const FileData = React.createContext();
 const App = () => {
   const [fdata, setFdata] = useState(null)
@@ -66,6 +71,9 @@ const App = () => {
             <Route path='/assignment6/section7' element={<HierarchialDIANA/>}/>
             <Route path='/assignment7/section1' element={<Dashboard/>}/>
             <Route path='/assignment7/section2' element={<Apriori/>}/>
+            <Route path='/assignment8/section1' element={<Crawler/>}/>
+            <Route path='/assignment8/section2' element={<PageRank/>}/>
+            <Route path='/assignment8/section3' element={<HITS/>}/>
           </Routes>
         </BrowserRouter>
       </FileData.Provider>

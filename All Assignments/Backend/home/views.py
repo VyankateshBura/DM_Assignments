@@ -81,28 +81,31 @@ from sklearn.cluster import DBSCAN
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, association_rules
 import warnings
+import requests
+from bs4 import BeautifulSoup
+import networkx as nx
 
 
-
-def web_crawler(seed_url, method='dfs'):
+def web_crawler(seed_url, method='dfs',max_depth=3):
     # Implement DFS or BFS crawler logic here
     # Return a list of crawled links
     # For simplicity, I'm using a basic example of BFS crawler
     visited = set()
-    queue = [seed_url]
+    queue = [(seed_url,0)]
     links = []
 
     while queue:
-        current_url = queue.pop(0)
+        current_url, depth = queue.pop(0)
 
-        if current_url not in visited:
+
+        if current_url not in visited and depth<=max_depth:
             try:
                 response = requests.get(current_url)
                 soup = BeautifulSoup(response.text, 'html.parser')
                 links_on_page = [a['href'] for a in soup.find_all('a', href=True)]
                 links.extend(links_on_page)
                 visited.add(current_url)
-                queue.extend(links_on_page)
+                queue.extend([(link, depth + 1) for link in links_on_page])
             except Exception as e:
                 print(f"Error crawling {current_url}: {e}")
 
@@ -111,9 +114,12 @@ def web_crawler(seed_url, method='dfs'):
 @csrf_exempt
 def crawl(request):
     try:
-        seed_url = request.POST.get('seed_url', '')
+        dp = json.loads(request.body)
+        seed_url = dp['seed_url']
+        # print(seed_url)
         if seed_url:
             links = web_crawler(seed_url)
+            # print(links)
             return JsonResponse({'links': links})
     except Exception as e:
         print(e)
@@ -133,7 +139,26 @@ def calculate_hits(request):
 @csrf_exempt
 def calculate_pagerank(request):
     try:
-        
+        # Read CSV file and create a directed graph
+        G = nx.DiGraph()
+        with open("D:/Projects/Data Mining Assignment/Assignment 1 to 5/Frontend/home/NodeEdges.csv",mode='r') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                from_node = row['FromNodeId']
+                to_node = row['ToNodeId']
+                G.add_edge(from_node, to_node)
+
+        # Calculate PageRank
+        pagerank_scores = nx.pagerank(G)
+
+        # Get the 10 pages with the highest rank
+        top_pages = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        # Tabulate the results containing the adjacency matrix and rank of pages
+        adjacency_matrix = nx.adjacency_matrix(G).todense().tolist()
+        rank_table = [{'Page': page, 'Rank': rank} for page, rank in top_pages]
+
+        return JsonResponse({'adjacency_matrix': adjacency_matrix, 'rank_table': rank_table})
         return JsonResponse({'msg':'Request processed.....'})
     except Exception as e:
         print(e)
