@@ -1,5 +1,7 @@
 from django.shortcuts import render
 import json
+import urllib
+from sklearn.decomposition import PCA
 # Create your views here.
 from rest_framework.parsers import FileUploadParser
 import csv
@@ -129,8 +131,35 @@ def crawl(request):
 @csrf_exempt
 def calculate_hits(request):
     try:
-        
-        return JsonResponse({'msg':'Request processed.....'})
+        # Path to the CSV file
+        csv_file_path = 'D:/Projects/Data Mining Assignment/All Assignments/Backend/home/NodeEdges.csv'
+
+        # Read edges from the CSV file
+        with open(csv_file_path, 'r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip the header row
+            edges = [(int(row[0]), int(row[1])) for row in csv_reader]
+
+        # Create a directed graph using NetworkX
+        G = nx.DiGraph(edges)
+
+        # Run the HITS algorithm
+        hubs, authorities = nx.hits(G)
+
+        # Get the top 10 authorities and hubs
+        top_authorities = sorted(authorities.items(), key=lambda x: x[1], reverse=True)[:10]
+        top_hubs = sorted(hubs.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        # Convert the graph to an adjacency matrix
+        adjacency_matrix = nx.to_numpy_matrix(G)
+
+        # Tabulate the results
+        results = {
+            'adjacency_matrix': adjacency_matrix.tolist(),
+            'authority_rank': top_authorities,
+            'hub_rank': top_hubs,
+        }
+        return JsonResponse({'msg':'Request processed.....','data':results})
     except Exception as e:
         print(e)
         return JsonResponse({"msg":"Error occurred "})
@@ -141,7 +170,7 @@ def calculate_pagerank(request):
     try:
         # Read CSV file and create a directed graph
         G = nx.DiGraph()
-        with open("D:/Projects/Data Mining Assignment/Assignment 1 to 5/Frontend/home/NodeEdges.csv",mode='r') as file:
+        with open("D:/Projects/Data Mining Assignment/All Assignments/Backend/home/NodeEdges.csv",mode='r') as file:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
                 from_node = row['FromNodeId']
@@ -199,15 +228,15 @@ def AprioriAlgo(request):
         # df = df.replace({"y": 1, "n": 0, "?": 0})
 
         # Step 2: Implement the Apriori algorithm with varying support, confidence, and maximum rule length
-        supports = [0.2]  # Vary support values
-        confidences = [0.3]  # Vary confidence values
+        supports = [0.5]  # Vary support values
+        confidences = [0.6]  # Vary confidence values
         max_len = 2  # Maximum rule length
 
         results = []
      
         # df.to_csv("data.csv",index=False)
 
-        df = pd.read_csv("D:/Projects/Data Mining Assignment/Assignment 1 to 5/Frontend/data.csv", header=None, names=column_names)
+        df = pd.read_csv("D:/Projects/Data Mining Assignment/All Assignments/Backend/data.csv", header=None, names=column_names)
         
 
         for support in supports:
@@ -245,7 +274,7 @@ def AprioriAlgo(request):
                 })
               
             
-          
+                print(rules)
         return JsonResponse({"results": results})
 
 
@@ -352,7 +381,7 @@ def plot_dendrogram(clusters, distances):
         for j in range(i + 1, len(distances)):
             plt.plot([i, j], [distances[i, j], distances[i, j]], c='b')
     plt.show()
-    image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/dendrogram.png'
+    image_path = 'D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/Hierarchial/dendrogram.png'
     plt.savefig(image_path)
     plt.close()
 
@@ -394,7 +423,7 @@ def agnes(request):
         # Save the image to a specific location
         # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
         # plot_dendrogram(result_clusters, distances)
-        image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/AGNES/dendrogram.png'
+        image_path = 'D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/Hierarchial/AGNES/dendrogram.png'
         plt.savefig(image_path)
         plt.close()
 
@@ -448,7 +477,7 @@ def diana(request):
         # Save the image to a specific location
         # image_path = os.path.join('path_to_your_directory', 'dendrogram.png')
         # plot_dendrogram(result_clusters, distances)
-        image_path = 'D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/Hierarchial/DIANA/dendrogram.png'
+        image_path = 'D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/Hierarchial/DIANA/dendrogram.png'
         plt.savefig(image_path)
         plt.close()
 
@@ -545,7 +574,7 @@ def K_Means(request):
         plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
 
         # Save the image
-        plt.savefig('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/K-Means/kmeans_clusters.png')
+        plt.savefig('D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/K-Means/kmeans_clusters.png')
         plt.close()
 
         results = {
@@ -773,10 +802,10 @@ def birchAlgo(request):
         dc = df.copy()
         dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
 
-        # Assuming data contains 'target' column with class labels
-        # X = [[row[attribute1], row[attribute2]] for row in data]````
-        X = df.iloc[:, :-1]
-        data = np.array(X, dtype=np.float64)
+        # # Assuming data contains 'target' column with class labels
+        # # X = [[row[attribute1], row[attribute2]] for row in data]````
+        # X = df.iloc[:, :-1]
+        # data = np.array(X, dtype=np.float64)
         # birch_custom = BIRCH(threshold=500, branching_factor=2, n_clusters=3)
         # birch_custom.fit(data)
         # # Define the tree structure
@@ -811,38 +840,86 @@ def birchAlgo(request):
         # print(clusters)
         
         # Creating the BIRCH clustering model
-        model = Birch(branching_factor = 50, n_clusters = None, threshold = 1.5)
+        # model = Birch(branching_factor = 50, n_clusters = None, threshold = 1.5)
 
-        # Fit the data (Training)
-        model.fit(data)
+        # # Fit the data (Training)
+        # model.fit(data)
 
       
 
         # Print the CF Tree
-        def print_tree(node, depth=0):
-            if hasattr(node, 'subcluster_centers_'):
-                print('  ' * depth, f"Subcluster with {len(node.subcluster_centers_)} subclusters")
-            else:
-                print('  ' * depth, "CF node")
+        # def print_tree(node, depth=0):
+        #     if hasattr(node, 'subcluster_centers_'):
+        #         print('  ' * depth, f"Subcluster with {len(node.subcluster_centers_)} subclusters")
+        #     else:
+        #         print('  ' * depth, "CF node")
 
-            if hasattr(node, 'children_'):
-                for child in node.children_:
-                    print_tree(child, depth + 1)
+        #     if hasattr(node, 'children_'):
+        #         for child in node.children_:
+        #             print_tree(child, depth + 1)
 
 
-        print_tree(model.root_)
+        # print_tree(model.root_)
 
         # # Creating a scatter plot
         # plt.scatter(X[:, 0], X[:, 1], c = pred, cmap = 'rainbow', alpha = 0.7, edgecolors = 'b')
-        # image_path = os.path.join('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/BIRCH', 'dendrogram.png')
+        # image_path = os.path.join('D:/Projects/Data Mining Assignment/All Assignments/Backend/src/Pages/BIRCH', 'dendrogram.png')
         # plt.savefig(image_path)
         # plt.close()
        
+         # Assuming data contains 'target' column with class labels
+        X = df.iloc[:, :-1]
+        data = np.array(X, dtype=np.float64)
+        
+        # Standardize the data
+        Standardized_data = StandardScaler().fit_transform(data)
+
+
+        # Apply PCA for visualization purposes (reduce to 2 dimensions)
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(Standardized_data)
+
+        # Birch Clustering
+        birch_cluster = Birch(threshold=0.5, n_clusters=None)
+        birch_labels = birch_cluster.fit_predict(Standardized_data)
+
+
+        # Visualize the clusters
+        plt.figure(figsize=(12, 5))
+
+        plt.subplot(1, 2, 1)
+        plt.scatter(X_pca[:, 0], X_pca[:, 1], c=birch_labels, cmap='viridis', edgecolor='k')
+        plt.title('Birch Clustering')
+
+
+        # Save the images
+        plt.savefig('D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/BIRCH/birch_clusters.png', bbox_inches='tight')
+        plt.close()
+                # Plot result (you may need to adapt this part based on how you want to visualize BIRCH results)
+        # ...
+
+        # Convert the tuple to a list for serialization
+        # colors = [list(color) for color in colors]
+
+        # # Convert int64 type to regular integer
+        # n_clusters_ = int(n_clusters_)
+
+        # # Convert the set to a list
+        # unique_labels = list(set(labels))
+
+        # # Create a dictionary with the data
+        # data = {"unique_labels": unique_labels,"clusters":n_clusters_}
+
+        # # Convert the data to JSON, ensuring that int64 values are converted to integers
+        # def convert_to_json_serializable(obj):
+        #     if isinstance(obj, np.int64):
+        #         return int(obj)
+        #     raise TypeError("Type not serializable")
+
+        # serialized_data = json.dumps(data, default=convert_to_json_serializable)
             
-        results = {
-            "ClusterNumber":'result_clusters'
-        }
-        return JsonResponse({"result":"BIRCH completed","data":results})
+        # print(serialized_data)
+        return JsonResponse({"result":"BIRCH completed","data":'serialized_data'})
         
     except Exception as e:
         print(e)
@@ -860,7 +937,8 @@ def DBSCANAlgo(request):
         def apply_zscore(column):
             return zscore_custom(column)
 
-        
+        print("eps",dp['eps'])
+        print("Min samples",dp['min_samples'])
         dc = df.copy()
         dc[numerical_columns] = dc[numerical_columns].apply(apply_zscore)
 
@@ -879,9 +957,9 @@ def DBSCANAlgo(request):
         # cl =model.predict(Standardized_data)
         # print(cl)
         
-        print(sklearn.__version__)
+        # print(sklearn.__version__)
         # Compute DBSCAN
-        dbscan = DBSCAN(eps=0.4, min_samples=5)
+        dbscan = DBSCAN(eps=dp['eps'], min_samples=dp['min_samples'])
         dbscan.fit(Standardized_data)
 
         # Extract the labels and core sample indices
@@ -913,7 +991,7 @@ def DBSCANAlgo(request):
 
         plt.title('Estimated number of clusters: %d' % n_clusters_)
         # plt.show()
-        plt.savefig('D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/DBSCAN/DBSCAN.png')
+        plt.savefig('D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/DBSCAN/DBSCAN.png')
    
         
 
@@ -929,9 +1007,14 @@ def DBSCANAlgo(request):
         # Create a dictionary with the data
         data = {"unique_labels": unique_labels, "colors": colors}
 
-        # Serialize the data
-        serialized_data = json.dumps(data)
-        return JsonResponse({"result":"DBSCAN Clustering completed","data":'serialized_data'})
+        # Convert the data to JSON, ensuring that int64 values are converted to integers
+        def convert_to_json_serializable(obj):
+            if isinstance(obj, np.int64):
+                return int(obj)
+            raise TypeError("Type not serializable")
+
+        serialized_data = json.dumps(data, default=convert_to_json_serializable)
+        return JsonResponse({"result":"DBSCAN Clustering completed","data":serialized_data})
         
     except Exception as e:
         print(e)
@@ -1299,7 +1382,7 @@ def decision_tree_classifier(request):
 
         # Specify the destination directory where you want to save the image
     
-        destination_directory = f"D:/Projects/Data Mining Assignment/Assignment 1 to 5/Backend/src/Pages/RuleBased/DecisionTree/DecisionTree{i}.png"
+        destination_directory = f"D:/Projects/Data Mining Assignment/All Assignments/Frontend/src/Pages/RuleBased/DecisionTree/DecisionTree{i}.png"
 
         # Use shutil.copy to copy the image to the destination directory
         shutil.copy(source_image_path, destination_directory)
