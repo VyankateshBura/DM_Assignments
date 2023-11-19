@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Paper, TableContainer, TableHead, TableRow, TableCell, TableBody, Grid } from '@material-ui/core';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import axios from 'axios'
 import { Table } from 'antd';
@@ -10,7 +10,7 @@ import ReactPaginate from 'react-paginate';
 
 const PageRankPlot = ({ data, url, title }) => {
 
-    const [fetchedData, setFetchedData] = useState([])
+    const [fetchedData, setFetchedData] = useState(null)
     const [loading, setLoading] = useState(false);
    
 
@@ -41,34 +41,27 @@ const PageRankPlot = ({ data, url, title }) => {
     }, [data,url]);
 
     // Function to extract row id
-
+    console.log("Fetched data ",fetchedData)
     return (
         <>
-        {loading ? (
+        {/* {loading ? (
                 <p>Loading...</p>
-            ) : (
+            ) : ( */}
                 <div>
-                    <h1>PageRank </h1>
-                    <TableContainer component={Paper}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Page</TableCell>
-                                    <TableCell>Rank</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {fetchedData && fetchedData.rank_table.map((row, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{row.Page}</TableCell>
-                                        <TableCell>{row.Rank}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    <h1>Top 10 Pages </h1>
+                    <Grid container spacing={2}>
+        {fetchedData &&
+          fetchedData.rank_table.map((row, index) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+              <Paper>
+                <p>{row.Page}</p>
+                <p>{row.Rank}</p>
+              </Paper>
+            </Grid>
+          ))}
+      </Grid>
                 </div>
-            )}
+            {/* )} */}
         </>
     );
 };

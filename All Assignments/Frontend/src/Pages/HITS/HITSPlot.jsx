@@ -10,7 +10,7 @@ import ReactPaginate from 'react-paginate';
 
 const HITSPlot = ({ data, url, title }) => {
 
-    const [fetchedData, setFetchedData] = useState([])
+    const [fetchedData, setFetchedData] = useState(null)
     const [loading, setLoading] = useState(false);
    
 
@@ -26,11 +26,11 @@ const HITSPlot = ({ data, url, title }) => {
             };
             
             try {
-                const response = await axios.post(`http://127.0.0.1:8000/api/v1/${url}/`, requestData);
+                const response = await axios.post(`http://127.0.0.1:8000/api/v1/calculate_hits/`, requestData);
                
                 console.log("Response from backend ", response)
                 
-               
+                setFetchedData(response.data)
                 
             } catch (error) {
                 console.error('Error sending POST request:', error);
@@ -41,7 +41,7 @@ const HITSPlot = ({ data, url, title }) => {
     }, [data,url]);
 
     // Function to extract row id
-
+    console.log(fetchedData)
     return (
         <>
         {loading ? (
@@ -49,7 +49,31 @@ const HITSPlot = ({ data, url, title }) => {
             ) : (
                 <div>
                     <h1>HITS </h1>
-      
+                    <h2>Adjacency Matrix:</h2>
+          {/* <table border="1">
+           
+            {fetchedData.data.adjacency_matrix.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((value, colIndex) => (
+                  <td key={colIndex}>{value}</td>
+                ))}
+              </tr>
+            ))}
+          </table> */}
+
+          <h2>Top 10 Authorities:</h2>
+          <ol>
+            { fetchedData && fetchedData.data.authority_rank.map(([node, rank]) => (
+              <li key={node}>Node {node} - Rank: {rank}</li>
+            ))}
+          </ol>
+
+          <h2>Top 10 Hubs:</h2>
+          <ol>
+            { fetchedData && fetchedData.data.hub_rank.map(([node, rank]) => (
+              <li key={node}>Node {node} - Rank: {rank}</li>
+            ))}
+          </ol>
                 </div>
             )}
         </>

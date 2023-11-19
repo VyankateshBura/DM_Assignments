@@ -123,7 +123,7 @@ export default function HITS() {
               noWrap
               sx={{ flexGrow: 1 }}
             >
-             CrawlerPlot
+             HITS PLOT
             </Typography>
             <IconButton color="inherit">
               <Badge badgeContent={5} color="secondary">
