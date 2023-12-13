@@ -86,20 +86,21 @@ import warnings
 import requests
 from bs4 import BeautifulSoup
 import networkx as nx
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_iris
+from sklearn.decomposition import PCA
+
 
 
 def web_crawler(seed_url, method='dfs',max_depth=3):
-    # Implement DFS or BFS crawler logic here
-    # Return a list of crawled links
-    # For simplicity, I'm using a basic example of BFS crawler
     visited = set()
     queue = [(seed_url,0)]
     links = []
 
     while queue:
         current_url, depth = queue.pop(0)
-
-
         if current_url not in visited and depth<=max_depth:
             try:
                 response = requests.get(current_url)
@@ -127,6 +128,31 @@ def crawl(request):
         print(e)
         return JsonResponse({"msg":"Error occurred "})
 
+def hits_algorithm(graph, max_iter=100, tol=1e-6):
+    # Initialize hub and authority scores
+    hubs = {node: 1.0 for node in graph.nodes()}
+    authorities = {node: 1.0 for node in graph.nodes()}
+
+    for _ in range(max_iter):
+        # Update authority scores
+        new_authorities = {node: sum(hubs[neighbor] for neighbor in graph.neighbors(node))
+                           for node in graph.nodes()}
+
+        # Normalize authority scores
+        norm_authorities = sum(val**2 for val in new_authorities.values())**0.5
+        authorities = {node: score / norm_authorities for node, score in new_authorities.items()}
+
+        # Update hub scores
+        new_hubs = {node: sum(authorities[neighbor] for neighbor in graph.neighbors(node))
+                     for node in graph.nodes()}
+
+        # Normalize hub scores
+        norm_hubs = sum(val**2 for val in new_hubs.values())**0.5
+        hubs = {node: score / norm_hubs for node, score in new_hubs.items()}
+
+    return hubs, authorities
+
+
 
 @csrf_exempt
 def calculate_hits(request):
@@ -142,6 +168,12 @@ def calculate_hits(request):
 
         # Create a directed graph using NetworkX
         G = nx.DiGraph(edges)
+
+        # Run HITS algorithm
+        hubs1, authorities1 = hits_algorithm(G)
+        # print(hubs1)
+        # print("*******")
+        # print(authorities1)
 
         # Run the HITS algorithm
         hubs, authorities = nx.hits(G)
@@ -177,18 +209,19 @@ def calculate_pagerank(request):
                 to_node = row['ToNodeId']
                 G.add_edge(from_node, to_node)
 
+        # Tabulate the results containing the adjacency matrix and rank of pages
+        adjacency_matrix = nx.adjacency_matrix(G).todense().tolist()
+
         # Calculate PageRank
         pagerank_scores = nx.pagerank(G)
 
         # Get the 10 pages with the highest rank
         top_pages = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)[:10]
 
-        # Tabulate the results containing the adjacency matrix and rank of pages
-        adjacency_matrix = nx.adjacency_matrix(G).todense().tolist()
         rank_table = [{'Page': page, 'Rank': rank} for page, rank in top_pages]
 
         return JsonResponse({'adjacency_matrix': adjacency_matrix, 'rank_table': rank_table})
-        return JsonResponse({'msg':'Request processed.....'})
+        
     except Exception as e:
         print(e)
         return JsonResponse({"msg":"Error occurred "})
@@ -785,6 +818,62 @@ def K_Medoids(request):
 
 #     def update_centroid(self):
 #         self.centroid = np.mean(self.points, axis=0)
+
+@csrf_exempt
+def ClusterValidation(request):
+    try:
+        # Load Iris dataset
+        iris = load_iris()
+        X = iris.data
+        true_labels = iris.target
+
+        # Standardize the data (optional, but often beneficial)
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        # Apply k-Means clustering
+        kmeans = KMeans(n_clusters=3, random_state=42)
+        kmeans_labels = kmeans.fit_predict(X_scaled)
+
+        # Apply Agglomerative Clustering (AGNES)
+        agnes = AgglomerativeClustering(n_clusters=3)
+        agnes_labels = agnes.fit_predict(X_scaled)
+
+        # Apply DBSCAN
+        dbscan = DBSCAN(eps=0.5, min_samples=5)
+        dbscan_labels = dbscan.fit_predict(X_scaled)
+
+        # Calculate cluster validation metrics
+        kmeans_silhouette = silhouette_score(X_scaled, kmeans_labels)
+        kmeans_calinski_harabasz = calinski_harabasz_score(X_scaled, kmeans_labels)
+        kmeans_davies_bouldin = davies_bouldin_score(X_scaled, kmeans_labels)
+
+        agnes_silhouette = silhouette_score(X_scaled, agnes_labels)
+        agnes_calinski_harabasz = calinski_harabasz_score(X_scaled, agnes_labels)
+        agnes_davies_bouldin = davies_bouldin_score(X_scaled, agnes_labels)
+
+        dbscan_silhouette = silhouette_score(X_scaled, dbscan_labels)
+
+        # Display results
+        print("k-Means:")
+        print(f"Silhouette Score: {kmeans_silhouette}")
+        print(f"Calinski-Harabasz Score: {kmeans_calinski_harabasz}")
+        print(f"Davies-Bouldin Score: {kmeans_davies_bouldin}")
+        print("\n")
+
+        print("Agglomerative Clustering (AGNES):")
+        print(f"Silhouette Score: {agnes_silhouette}")
+        print(f"Calinski-Harabasz Score: {agnes_calinski_harabasz}")
+        print(f"Davies-Bouldin Score: {agnes_davies_bouldin}")
+        print("\n")
+
+        print("DBSCAN:")
+        print(f"Silhouette Score: {dbscan_silhouette}")
+
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({'msg':"Internal Server Error"})
 
 
 @csrf_exempt
