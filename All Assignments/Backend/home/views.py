@@ -135,7 +135,7 @@ def hits_algorithm(graph, max_iter=100, tol=1e-6):
 
     for _ in range(max_iter):
         # Update authority scores
-        new_authorities = {node: sum(hubs[neighbor] for neighbor in graph.neighbors(node))
+        new_authorities = {node: sum(hubs[neighbors] for neighbors in graph.neighbors(node))
                            for node in graph.nodes()}
 
         # Normalize authority scores
